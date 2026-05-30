@@ -1,0 +1,33 @@
+name: Zulim Reminders
+
+# Runs every 2 hours. The script decides what (if anything) to send
+# based on the local hour. GitHub cron uses UTC.
+on:
+  schedule:
+    - cron: "0 */2 * * *"   # every 2 hours, on the hour (UTC)
+    - cron: "30 12 * * *"   # extra run to catch the 6:30am CST kickoff (12:30 UTC)
+  workflow_dispatch:          # lets you run it manually from the Actions tab to test
+    inputs:
+      test_mode:
+        description: "Send a test email regardless of the time?"
+        type: boolean
+        default: true
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Send due reminders
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          FROM: ${{ secrets.FROM }}
+          EMAIL_CHRISTIAN: ${{ secrets.EMAIL_CHRISTIAN }}
+          EMAIL_ZULIM: ${{ secrets.EMAIL_ZULIM }}
+          TZ_OFFSET: ${{ secrets.TZ_OFFSET }}
+          PROGRAM_START: ${{ secrets.PROGRAM_START }}
+          TEST_MODE: ${{ github.event.inputs.test_mode }}
+        run: node send.js
